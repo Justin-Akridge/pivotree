@@ -46,7 +46,7 @@ import * as THREE from 'three';
 	
 	async function loadJsonData() {
 		try {
-			const response = await fetch('./public/pole_locations.json');
+			const response = await fetch('/pole_locations.json');
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
@@ -82,7 +82,7 @@ import * as THREE from 'three';
 		potreeViewer.scene.scene.add(points);
 	}
 	// Potree.loadPointCloud("../pointclouds/vol_total/cloud.js", "sigeom.sa", e => {
-	Potree.loadPointCloud("../pointclouds/bin3/metadata.json", "bin3", e => {
+	Potree.loadPointCloud("/bin2/metadata.json", "bin3", e => {
 		potreeViewer.scene.addPointCloud(e.pointcloud);
 		// e.pointcloud.position.z = 0;
 		let material = e.pointcloud.material;
