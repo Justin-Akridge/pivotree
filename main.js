@@ -1,90 +1,145 @@
 import * as THREE from 'three'; 
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.z = 5;
+const scene = new THREE.Scene();
 
-	window.cesiumViewer = new Cesium.Viewer('cesiumContainer', {
-		useDefaultRenderLoop: false,
-		animation: false,
-		baseLayerPicker : false,
-		fullscreenButton: false, 
-		geocoder: false,
-		homeButton: false,
-		infoBox: false,
-		sceneModePicker: false,
-		selectionIndicator: false,
-		timeline: false,
-		navigationHelpButton: false,
-		imageryProvider : Cesium.createOpenStreetMapImageryProvider({url : 'https://a.tile.openstreetmap.org/'}),
-		terrainShadows: Cesium.ShadowMode.DISABLED,
-	});
+window.cesiumViewer = new Cesium.Viewer('cesiumContainer', {
+	useDefaultRenderLoop: false,
+	animation: false,
+	baseLayerPicker : false,
+	fullscreenButton: false, 
+	geocoder: false,
+	homeButton: false,
+	infoBox: false,
+	sceneModePicker: false,
+	selectionIndicator: false,
+	timeline: false,
+	navigationHelpButton: false,
+	imageryProvider : Cesium.createOpenStreetMapImageryProvider({url : 'https://a.tile.openstreetmap.org/'}),
+	terrainShadows: Cesium.ShadowMode.DISABLED,
+});
 
-	let cp = new Cesium.Cartesian3(4303414.154026048, 552161.235598733, 4660771.704035539);
-	cesiumViewer.camera.setView({
-		destination : cp,
-		orientation: {
-			heading : 10, 
-			pitch : -Cesium.Math.PI_OVER_TWO * 0.5, 
-			roll : 0.0 
-		}
-	});
-
-	window.potreeViewer = new Potree.Viewer(document.getElementById("potree_render_area"), {
-		useDefaultRenderLoop: false
-	});
-	potreeViewer.setEDLEnabled(true);
-	potreeViewer.setFOV(60);
-	potreeViewer.setPointBudget(1_000_000);
-	potreeViewer.setMinNodeSize(0);
-	potreeViewer.loadSettingsFromURL();
-	potreeViewer.setBackground(null);
-
-	potreeViewer.loadGUI(() => {
-		potreeViewer.setLanguage('en');
-		$("#menu_appearance").next().show();
-		$("#menu_tools").next().show();
-		$("#menu_scene").next().show();
-		potreeViewer.toggleSidebar();
-	});
-	
-	async function loadJsonData() {
-		try {
-			const response = await fetch('/pole_locations.json');
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`);
-			}
-			const data = await response.json();
-			console.log('Pole locations:', data);
-			addMarkers(data);
-		} catch (error) {
-			console.error('Error fetching JSON data:', error);
-		}
+let cp = new Cesium.Cartesian3(4303414.154026048, 552161.235598733, 4660771.704035539);
+cesiumViewer.camera.setView({
+	destination : cp,
+	orientation: {
+		heading : 10, 
+		pitch : -Cesium.Math.PI_OVER_TWO * 0.5, 
+		roll : 0.0 
 	}
+});
 
-	// Call the function to load the JSON data
-	loadJsonData();
+window.potreeViewer = new Potree.Viewer(document.getElementById("potree_render_area"), {
+	useDefaultRenderLoop: false
+});
+potreeViewer.setEDLEnabled(true);
+potreeViewer.setFOV(60);
+potreeViewer.setPointBudget(1_000_000);
+potreeViewer.setMinNodeSize(0);
+potreeViewer.loadSettingsFromURL();
+potreeViewer.setBackground(null);
 
-	// Function to add markers to the Potree scene
-	function addMarkers(poleLocations) {
-		const geometry = new THREE.BufferGeometry();
-		const positions = [];
+potreeViewer.loadGUI(() => {
+	potreeViewer.setLanguage('en');
+	$("#menu_appearance").next().show();
+	$("#menu_tools").next().show();
+	$("#menu_scene").next().show();
+	potreeViewer.toggleSidebar();
+});
 
-		poleLocations.forEach(location => {
-			positions.push(location.x, location.y, location.z);
-		});
-
-		geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-
-		const material = new THREE.PointsMaterial({
-			color: 0xff0000, // Red color for the markers
-			size: 2, // Adjust the size as needed
-			sizeAttenuation: false,
-		});
-
-		const points = new THREE.Points(geometry, material);
-		potreeViewer.scene.scene.add(points);
+async function loadJsonData() {
+	try {
+		const response = await fetch('/pole_locations.json');
+		if (!response.ok) {
+			throw new Error(`HTTP error! status: ${response.status}`);
+		}
+		const data = await response.json();
+		console.log('Pole locations:', data);
+		addMarkers(data);
+	} catch (error) {
+		console.error('Error fetching JSON data:', error);
 	}
-	// Potree.loadPointCloud("../pointclouds/vol_total/cloud.js", "sigeom.sa", e => {
-	Potree.loadPointCloud("/bin2/metadata.json", "bin3", e => {
+}
+
+loadJsonData();
+
+let intersects = []
+let width = window.innerWidth;
+let height = window.innerHeight;
+let points; 
+const positions = [];
+function addMarkers(poleLocations) {
+    poleLocations.forEach(location => {
+        positions.push(location.x, location.y, location.z);
+        const geometry = new THREE.SphereGeometry(.7, 32);
+        const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        const circle = new THREE.Mesh(geometry, material);
+
+        circle.position.set(location.x, location.y, location.z);
+
+        potreeViewer.scene.scene.add(circle);
+    });
+}
+
+console.log(positions)
+
+// function addMarkers(poleLocations) {
+//     const geometry = new THREE.BufferGeometry();
+
+//     poleLocations.forEach(location => {
+//         positions.push(location.x, location.y, location.z);
+//     });
+
+//     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+
+//     const material = new THREE.PointsMaterial({
+//         color: 0xff0000,
+//         size: 100,
+//         sizeAttenuation: false,
+//     });
+
+//     points = new THREE.Points(geometry, material);
+//     potreeViewer.scene.scene.add(points);
+// }
+
+// window.addEventListener('mousemove', (e) => {
+//     // Update the mouse position
+//     mouse.set((e.clientX / width) * 2 - 1, -(e.clientY / height) * 2 + 1);
+
+//     // Update raycaster
+//     raycaster.setFromCamera(mouse, camera);
+
+//     // Find intersections
+//     intersects = raycaster.intersectObject(points); // Intersect only with the points object
+
+//     // If intersects, change color to hotpink; otherwise, revert to orange
+//     if (intersects.length > 0) {
+//         points.material.color.set('hotpink');
+//     } else {
+//         points.material.color.set('orange');
+//     }
+
+//     // Convert color to linear space
+//     points.material.color.convertSRGBToLinear();
+// });
+
+window.addEventListener('click', (e) => {
+	console.log(e)
+    // Check if the points are clicked
+    const findPoint = intersects.find((hit) => hit.object === points);
+
+    if (findPoint) {
+        console.log("Point found:", findPoint.point);
+    }
+});
+
+
+
+	Potree.loadPointCloud("pointclouds/bin3/metadata.json", "bin3", e => {
 		potreeViewer.scene.addPointCloud(e.pointcloud);
-		// e.pointcloud.position.z = 0;
+		//e.pointcloud.position.z = 0;
 		let material = e.pointcloud.material;
 		material.pointSizeType = Potree.PointSizeType.ADAPTIVE;
 		
